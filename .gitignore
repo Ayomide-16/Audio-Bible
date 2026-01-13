@@ -1,0 +1,78 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+*.lock
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio
+/android/app/debug
+/android/app/profile
+/android/app/release
+*.jks
+*.keystore
+
+# iOS related
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+
+# Coverage
+coverage/
+
+# Generated Dart files
+*.g.dart
+*.freezed.dart
+
+# Audio files - managed via Git LFS for initial release
+# Uncomment below to exclude from git entirely:
+# *.mp3
+
+# Large assets (audio files will be tracked via Git LFS)
+# assets/audio/
+
+# Environment files
+.env
+.env.*
+
+# VS Code
+.vscode/
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+
+# Gradle
+.gradle/
+local.properties
