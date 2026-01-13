@@ -15,8 +15,6 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-      with:
-        lfs: true
     
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
@@ -72,14 +70,31 @@ jobs:
       id: version
       run: |
         VERSION=$(grep 'version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+        BUILD=$(grep 'version:' pubspec.yaml | awk '{print $2}' | cut -d'+' -f2)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "build=$BUILD" >> $GITHUB_OUTPUT
+    
+    - name: Create audio ZIP (if exists)
+      run: |
+        if [ -d "assets/audio" ] && [ "$(ls -A assets/audio 2>/dev/null)" ]; then
+          cd assets
+          zip -r ../audio-files.zip audio/
+          cd ..
+          echo "AUDIO_EXISTS=true" >> $GITHUB_ENV
+        else
+          echo "AUDIO_EXISTS=false" >> $GITHUB_ENV
+        fi
+      continue-on-error: true
     
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: v${{ steps.version.outputs.version }}
+        tag_name: v${{ steps.version.outputs.version }}-${{ steps.version.outputs.build }}
         name: Audio Bible v${{ steps.version.outputs.version }}
-        files: build/app/outputs/flutter-apk/app-release.apk
+        files: |
+          build/app/outputs/flutter-apk/app-release.apk
+          audio-files.zip
+        fail_on_unmatched_files: false
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
