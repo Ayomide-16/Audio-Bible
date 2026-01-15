@@ -79,11 +79,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       ),
       body: Column(
         children: [
-          // Audio Player (collapsible)
+          // Audio Player controls (simple play button when toggled)
           if (_showAudioPlayer)
             chapterAsync.when(
               data: (chapter) => chapter != null
-                  ? AudioPlayerWidget(chapter: chapter)
+                  ? _buildSimpleAudioControls(context, chapter)
                   : const SizedBox.shrink(),
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
@@ -218,6 +218,53 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               foregroundColor: _hasNextChapter(chapter) 
                   ? AppColors.primary 
                   : Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSimpleAudioControls(BuildContext context, Chapter chapter) {
+    final audioState = ref.watch(audioPlayerStateProvider);
+    final isPlayingThis = audioState.isPlaying && 
+        audioState.chapter == _currentChapter;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        border: Border(
+          bottom: BorderSide(color: AppColors.primary.withOpacity(0.2)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.headset, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Text(
+            'Audio: ${chapter.title}',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: () {
+              if (isPlayingThis) {
+                ref.read(audioPlayerStateProvider.notifier).pause();
+              } else {
+                ref.read(audioPlayerStateProvider.notifier).play(
+                  chapter.title.split(' ').first,
+                  _currentChapter,
+                );
+              }
+            },
+            icon: Icon(
+              isPlayingThis ? Icons.pause_circle_filled : Icons.play_circle_filled,
+              size: 40,
+              color: AppColors.primary,
             ),
           ),
         ],

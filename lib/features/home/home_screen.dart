@@ -8,9 +8,9 @@ import '../../core/theme/app_theme.dart';
 import '../reader/reader_screen.dart';
 import '../search/search_screen.dart';
 import '../settings/settings_screen.dart';
-import 'honeycomb_navigation.dart';
-import 'list_navigation.dart';
-import 'grid_navigation.dart';
+import '../navigation/honeycomb_navigation.dart';
+import '../navigation/list_navigation.dart';
+import '../navigation/grid_navigation.dart';
 
 /// Provider for recent chapters
 final recentChaptersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
