@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
-import 'features/home/home_screen.dart';
+import 'features/main_shell.dart';
 import 'features/download/download_screen.dart';
 import 'features/download/download_service.dart';
 
@@ -36,8 +36,7 @@ class AppEntryPoint extends StatefulWidget {
 
 class _AppEntryPointState extends State<AppEntryPoint> {
   bool _isLoading = true;
-  bool _audioDownloaded = false;
-  bool _skipDownload = false;
+  bool _showDownloadScreen = false;
 
   @override
   void initState() {
@@ -46,9 +45,25 @@ class _AppEntryPointState extends State<AppEntryPoint> {
   }
 
   Future<void> _checkAudioStatus() async {
-    final downloaded = await DownloadService.isAudioDownloaded();
+    // Check if audio is already downloaded
+    final audioDownloaded = await DownloadService.isAudioDownloaded();
+    
+    // If audio is downloaded, go directly to main app
+    if (audioDownloaded) {
+      setState(() {
+        _showDownloadScreen = false;
+        _isLoading = false;
+      });
+      return;
+    }
+    
+    // Check if user has already seen and skipped the download prompt
+    final hasSeenPrompt = await DownloadService.hasSeenDownloadPrompt();
+    
+    // Only show download screen on FIRST launch when audio is not downloaded
+    // After user skips, never show again automatically
     setState(() {
-      _audioDownloaded = downloaded;
+      _showDownloadScreen = !hasSeenPrompt;
       _isLoading = false;
     });
   }
@@ -61,19 +76,12 @@ class _AppEntryPointState extends State<AppEntryPoint> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryLight],
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.menu_book_rounded,
-                  color: Colors.white,
-                  size: 40,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset(
+                  'assets/icon.png',
+                  width: 100,
+                  height: 100,
                 ),
               ),
               const SizedBox(height: 24),
@@ -84,19 +92,21 @@ class _AppEntryPointState extends State<AppEntryPoint> {
       );
     }
 
-    // Show download screen if audio not downloaded and not skipped
-    if (!_audioDownloaded && !_skipDownload) {
+    // Show download screen only on first launch when audio not downloaded
+    if (_showDownloadScreen) {
       return DownloadScreen(
         onComplete: () {
-          setState(() => _audioDownloaded = true);
+          setState(() => _showDownloadScreen = false);
         },
-        onSkip: () {
-          setState(() => _skipDownload = true);
+        onSkip: () async {
+          // Mark prompt as seen so it won't show again
+          await DownloadService.markDownloadPromptSeen();
+          setState(() => _showDownloadScreen = false);
         },
       );
     }
 
-    // Show main app
-    return const HomeScreen();
+    // Show main app with bottom navigation
+    return const MainShell();
   }
 }

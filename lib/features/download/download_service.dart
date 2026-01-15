@@ -9,10 +9,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 class DownloadService {
   static const String _audioDownloadedKey = 'audio_downloaded';
   static const String _downloadProgressKey = 'download_progress';
+  static const String _hasSeenDownloadPromptKey = 'has_seen_download_prompt';
+  static const String _downloadTimestampKey = 'audio_download_timestamp';
   
   /// GitHub release URL for audio files
   static const String audioZipUrl = 
       'https://github.com/Ayomide-16/Audio-Bible/releases/latest/download/audio-files.zip';
+  
+  /// Check if user has already seen the download prompt (to avoid repeated prompts)
+  static Future<bool> hasSeenDownloadPrompt() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_hasSeenDownloadPromptKey) ?? false;
+  }
+  
+  /// Mark that user has seen the download prompt
+  static Future<void> markDownloadPromptSeen() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_hasSeenDownloadPromptKey, true);
+  }
   
   /// Check if audio files are already downloaded
   static Future<bool> isAudioDownloaded() async {
@@ -28,6 +42,16 @@ class DownloadService {
       }
     }
     return false;
+  }
+  
+  /// Get download timestamp
+  static Future<DateTime?> getDownloadTimestamp() async {
+    final prefs = await SharedPreferences.getInstance();
+    final timestamp = prefs.getInt(_downloadTimestampKey);
+    if (timestamp != null) {
+      return DateTime.fromMillisecondsSinceEpoch(timestamp);
+    }
+    return null;
   }
   
   /// Get the audio directory path
@@ -112,6 +136,7 @@ class DownloadService {
       // Mark as complete
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_audioDownloadedKey, true);
+      await prefs.setInt(_downloadTimestampKey, DateTime.now().millisecondsSinceEpoch);
       
       onProgress(1.0, 'Complete!');
       onComplete();
