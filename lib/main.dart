@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
+import 'core/providers/theme_provider.dart';
 import 'features/main_shell.dart';
 import 'features/download/download_screen.dart';
 import 'features/download/download_service.dart';
@@ -15,12 +16,15 @@ class AudioBibleApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the theme mode provider for reactive theme changes
+    final themeMode = ref.watch(themeModeProvider);
+    
     return MaterialApp(
       title: 'Audio Bible',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode, // Now uses the provider instead of hardcoded
       home: const AppEntryPoint(),
     );
   }
@@ -45,7 +49,7 @@ class _AppEntryPointState extends State<AppEntryPoint> {
   }
 
   Future<void> _checkAudioStatus() async {
-    // Check if audio is already downloaded
+    // Check if audio is already downloaded (includes USB transfer check)
     final audioDownloaded = await DownloadService.isAudioDownloaded();
     
     // If audio is downloaded, go directly to main app
@@ -77,7 +81,7 @@ class _AppEntryPointState extends State<AppEntryPoint> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 child: Image.asset(
                   'assets/icon.png',
                   width: 100,

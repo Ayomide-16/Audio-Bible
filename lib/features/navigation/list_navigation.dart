@@ -3,23 +3,21 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../data/models/bible_models.dart';
 import '../../core/theme/app_theme.dart';
 
-class ListNavigation extends StatefulWidget {
+class GridNavigation extends StatefulWidget {
   final Bible bible;
   final Function(int bookId, int chapter, String bookName) onChapterSelected;
 
-  const ListNavigation({
+  const GridNavigation({
     super.key,
     required this.bible,
     required this.onChapterSelected,
   });
 
   @override
-  State<ListNavigation> createState() => _ListNavigationState();
+  State<GridNavigation> createState() => _GridNavigationState();
 }
 
-class _ListNavigationState extends State<ListNavigation> {
-  bool _otExpanded = false;
-  bool _ntExpanded = false;
+class _GridNavigationState extends State<GridNavigation> {
   Book? _selectedBook;
 
   @override
@@ -27,140 +25,275 @@ class _ListNavigationState extends State<ListNavigation> {
     if (_selectedBook != null) {
       return _buildChapterGrid();
     }
-    return _buildBooksList();
+    return _buildBooksGrid();
   }
 
-  Widget _buildBooksList() {
+  Widget _buildBooksGrid() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20), // Uniform margin
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Old Testament
-          _buildTestamentSection(
-            'Old Testament',
-            widget.bible.oldTestament,
-            _otExpanded,
-            () => setState(() => _otExpanded = !_otExpanded),
+          Text(
+            'Select a Book',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
-          // New Testament
-          _buildTestamentSection(
-            'New Testament',
-            widget.bible.newTestament,
-            _ntExpanded,
-            () => setState(() => _ntExpanded = !_ntExpanded),
+          Text(
+            '${widget.bible.books.length} books in the Bible',
+            style: Theme.of(context).textTheme.bodySmall,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTestamentSection(
-    String title,
-    List<Book> books,
-    bool isExpanded,
-    VoidCallback onToggle,
-  ) {
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Column(
-        children: [
-          ListTile(
-            title: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text('${books.length} books'),
-            trailing: Icon(
-              isExpanded ? Icons.expand_less : Icons.expand_more,
-            ),
-            onTap: onToggle,
-          ),
-          if (isExpanded) ...[
-            const Divider(height: 1),
-            ...books.map((book) => ListTile(
-              dense: true,
-              leading: CircleAvatar(
-                radius: 16,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                child: Text(
-                  '${book.id}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
+          const SizedBox(height: 20),
+          
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                childAspectRatio: 0.85,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: widget.bible.books.length,
+              itemBuilder: (context, index) {
+                final book = widget.bible.books[index];
+                final isOldTestament = book.id <= 39;
+                final colorIndex = index % AppColors.honeycombColors.length;
+                final color = AppColors.honeycombColors[colorIndex];
+                
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedBook = book),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          color.withOpacity(isDark ? 0.25 : 0.12),
+                          color.withOpacity(isDark ? 0.15 : 0.06),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: color.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [color, color.withOpacity(0.7)],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: color.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              book.name.substring(0, 1),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          book.name,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${book.chapterCount}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-              title: Text(book.name),
-              trailing: Text(
-                '${book.chapterCount} ch',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              onTap: () => setState(() => _selectedBook = book),
-            )),
-          ],
+                ).animate(delay: (index * 20).ms).fadeIn().scale(begin: const Offset(0.9, 0.9));
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildChapterGrid() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorIndex = widget.bible.books.indexOf(_selectedBook!) % AppColors.honeycombColors.length;
+    final color = AppColors.honeycombColors[colorIndex];
+
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              IconButton(
-                onPressed: () => setState(() => _selectedBook = null),
-                icon: const Icon(Icons.arrow_back_rounded),
+              _buildBackButton(onPressed: () => setState(() => _selectedBook = null)),
+              const SizedBox(width: 12),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [color, color.withOpacity(0.7)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    _selectedBook!.name.substring(0, 1),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
-              Text(
-                _selectedBook!.name,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _selectedBook!.name,
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    Text(
+                      '${_selectedBook!.chapterCount} chapters',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: List.generate(_selectedBook!.chapterCount, (index) {
-              final chapter = index + 1;
-              return GestureDetector(
-                onTap: () {
-                  widget.onChapterSelected(
-                    _selectedBook!.id,
-                    chapter,
-                    _selectedBook!.name,
-                  );
-                },
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$chapter',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
+          const SizedBox(height: 24),
+          
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 5,
+                childAspectRatio: 1,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemCount: _selectedBook!.chapterCount,
+              itemBuilder: (context, index) {
+                final chapter = index + 1;
+                
+                return GestureDetector(
+                  onTap: () {
+                    widget.onChapterSelected(
+                      _selectedBook!.id,
+                      chapter,
+                      _selectedBook!.name,
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          color.withOpacity(isDark ? 0.3 : 0.15),
+                          color.withOpacity(isDark ? 0.2 : 0.08),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: color.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$chapter',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? color.withOpacity(0.9) : color,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ).animate(delay: (index * 15).ms).fadeIn();
-            }),
+                ).animate(delay: (index * 15).ms).fadeIn().scale(begin: const Offset(0.8, 0.8));
+              },
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildBackButton({required VoidCallback onPressed}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.cardDark : AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight,
+            width: 0.5,
+          ),
+        ),
+        child: Icon(
+          Icons.arrow_back_rounded,
+          size: 20,
+          color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
+        ),
       ),
     );
   }

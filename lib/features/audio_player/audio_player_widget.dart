@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:ui';
 import '../../core/theme/app_theme.dart';
 
 /// Provider for audio player state
@@ -92,13 +93,14 @@ class AudioPlayerStateNotifier extends StateNotifier<AudioPlayerState> {
   }
 }
 
-/// Bottom audio player widget
+/// Apple Music-inspired bottom audio player widget
 class BottomAudioPlayer extends ConsumerWidget {
   const BottomAudioPlayer({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(audioPlayerStateProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (!state.isVisible) {
       return const SizedBox.shrink();
@@ -106,30 +108,84 @@ class BottomAudioPlayer extends ConsumerWidget {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      height: state.isExpanded ? 180 : 64,
+      curve: Curves.easeInOut,
+      height: state.isExpanded ? 200 : 72,
+      margin: EdgeInsets.only(bottom: state.isExpanded ? 0 : 80),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isDark 
+            ? AppColors.cardDark.withOpacity(0.95)
+            : AppColors.cardLight.withOpacity(0.95),
+        borderRadius: state.isExpanded 
+            ? const BorderRadius.vertical(top: Radius.circular(20))
+            : BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
         ],
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        border: Border.all(
+          color: isDark ? AppColors.borderDark : AppColors.borderLight,
+          width: 0.5,
+        ),
       ),
-      child: state.isExpanded ? _buildExpandedPlayer(context, ref, state) : _buildCollapsedPlayer(context, ref, state),
+      margin: EdgeInsets.fromLTRB(
+        state.isExpanded ? 0 : 12,
+        0,
+        state.isExpanded ? 0 : 12,
+        state.isExpanded ? 0 : 88,
+      ),
+      child: ClipRRect(
+        borderRadius: state.isExpanded 
+            ? const BorderRadius.vertical(top: Radius.circular(20))
+            : BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: state.isExpanded 
+              ? _buildExpandedPlayer(context, ref, state, isDark) 
+              : _buildCollapsedPlayer(context, ref, state, isDark),
+        ),
+      ),
     );
   }
 
-  Widget _buildCollapsedPlayer(BuildContext context, WidgetRef ref, AudioPlayerState state) {
+  Widget _buildCollapsedPlayer(BuildContext context, WidgetRef ref, AudioPlayerState state, bool isDark) {
+    final color = isDark ? AppColors.primaryDark : AppColors.primary;
+    
     return GestureDetector(
       onTap: () => ref.read(audioPlayerStateProvider.notifier).toggleExpanded(),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
-            // Book and chapter
+            // Album art / Icon
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [color, color.withOpacity(0.7)],
+                ),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.headphones_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Book and chapter info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,37 +193,50 @@ class BottomAudioPlayer extends ConsumerWidget {
                 children: [
                   Text(
                     '${state.bookName} ${state.chapter}',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${_formatDuration(state.currentPosition)} / ${_formatDuration(state.totalDuration)}',
-                    style: Theme.of(context).textTheme.bodySmall,
+                  const SizedBox(height: 4),
+                  // Progress bar mini
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: state.totalDuration.inSeconds > 0
+                          ? state.currentPosition.inSeconds / state.totalDuration.inSeconds
+                          : 0,
+                      backgroundColor: color.withOpacity(0.2),
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                      minHeight: 3,
+                    ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             // Play/pause button
-            IconButton(
-              onPressed: () {
+            GestureDetector(
+              onTap: () {
                 if (state.isPlaying) {
                   ref.read(audioPlayerStateProvider.notifier).pause();
                 } else {
                   ref.read(audioPlayerStateProvider.notifier).resume();
                 }
               },
-              icon: Icon(
-                state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                size: 32,
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
               ),
-            ),
-            // Close button
-            IconButton(
-              onPressed: () => ref.read(audioPlayerStateProvider.notifier).stop(),
-              icon: const Icon(Icons.close, size: 20),
             ),
           ],
         ),
@@ -175,46 +244,82 @@ class BottomAudioPlayer extends ConsumerWidget {
     );
   }
 
-  Widget _buildExpandedPlayer(BuildContext context, WidgetRef ref, AudioPlayerState state) {
+  Widget _buildExpandedPlayer(BuildContext context, WidgetRef ref, AudioPlayerState state, bool isDark) {
+    final color = isDark ? AppColors.primaryDark : AppColors.primary;
+    
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Header with collapse button
+          // Handle bar
+          Container(
+            width: 36,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight).withOpacity(0.5),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Header
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '${state.bookName} - Chapter ${state.chapter}',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [color, color.withOpacity(0.7)],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.headphones_rounded,
+                  color: Colors.white,
+                  size: 24,
                 ),
               ),
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () => ref.read(audioPlayerStateProvider.notifier).toggleExpanded(),
-                    icon: const Icon(Icons.keyboard_arrow_down),
-                  ),
-                  IconButton(
-                    onPressed: () => ref.read(audioPlayerStateProvider.notifier).stop(),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${state.bookName} ${state.chapter}',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
+                    Text(
+                      'Chapter ${state.chapter}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => ref.read(audioPlayerStateProvider.notifier).toggleExpanded(),
+                icon: const Icon(Icons.keyboard_arrow_down_rounded),
+              ),
+              IconButton(
+                onPressed: () => ref.read(audioPlayerStateProvider.notifier).stop(),
+                icon: const Icon(Icons.close_rounded),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          // Progress bar
+          const SizedBox(height: 16),
+          // Progress slider
           SliderTheme(
             data: SliderTheme.of(context).copyWith(
-              trackHeight: 4,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
             ),
             child: Slider(
               value: state.currentPosition.inSeconds.toDouble(),
               min: 0,
               max: state.totalDuration.inSeconds.toDouble(),
+              activeColor: color,
+              inactiveColor: color.withOpacity(0.2),
               onChanged: (value) {
                 ref.read(audioPlayerStateProvider.notifier).setPosition(Duration(seconds: value.toInt()));
               },
@@ -222,12 +327,12 @@ class BottomAudioPlayer extends ConsumerWidget {
           ),
           // Time display
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(_formatDuration(state.currentPosition), style: Theme.of(context).textTheme.bodySmall),
-                Text(_formatDuration(state.totalDuration), style: Theme.of(context).textTheme.bodySmall),
+                Text('-${_formatDuration(state.totalDuration - state.currentPosition)}', style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           ),
@@ -237,52 +342,86 @@ class BottomAudioPlayer extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               // Speed selector
-              PopupMenuButton<double>(
-                onSelected: (speed) => ref.read(audioPlayerStateProvider.notifier).setSpeed(speed),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 0.5, child: Text('0.5x')),
-                  const PopupMenuItem(value: 0.75, child: Text('0.75x')),
-                  const PopupMenuItem(value: 1.0, child: Text('1x')),
-                  const PopupMenuItem(value: 1.25, child: Text('1.25x')),
-                  const PopupMenuItem(value: 1.5, child: Text('1.5x')),
-                  const PopupMenuItem(value: 2.0, child: Text('2x')),
-                ],
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text('${state.playbackSpeed}x'),
-                ),
+              _buildSpeedButton(context, ref, state, color),
+              IconButton(
+                onPressed: () {},
+                icon: Icon(Icons.skip_previous_rounded, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
               ),
-              IconButton(onPressed: () {}, icon: const Icon(Icons.skip_previous_rounded)),
-              IconButton(onPressed: () {}, icon: const Icon(Icons.replay_10_rounded)),
+              IconButton(
+                onPressed: () {},
+                icon: Icon(Icons.replay_10_rounded, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+              ),
               // Play/pause
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  onPressed: () {
-                    if (state.isPlaying) {
-                      ref.read(audioPlayerStateProvider.notifier).pause();
-                    } else {
-                      ref.read(audioPlayerStateProvider.notifier).resume();
-                    }
-                  },
-                  icon: Icon(
+              GestureDetector(
+                onTap: () {
+                  if (state.isPlaying) {
+                    ref.read(audioPlayerStateProvider.notifier).pause();
+                  } else {
+                    ref.read(audioPlayerStateProvider.notifier).resume();
+                  }
+                },
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
                     state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                     color: Colors.white,
+                    size: 32,
                   ),
                 ),
               ),
-              IconButton(onPressed: () {}, icon: const Icon(Icons.forward_10_rounded)),
-              IconButton(onPressed: () {}, icon: const Icon(Icons.skip_next_rounded)),
+              IconButton(
+                onPressed: () {},
+                icon: Icon(Icons.forward_10_rounded, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: Icon(Icons.skip_next_rounded, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight),
+              ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSpeedButton(BuildContext context, WidgetRef ref, AudioPlayerState state, Color color) {
+    return PopupMenuButton<double>(
+      onSelected: (speed) => ref.read(audioPlayerStateProvider.notifier).setSpeed(speed),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      itemBuilder: (context) => [
+        const PopupMenuItem(value: 0.5, child: Text('0.5x')),
+        const PopupMenuItem(value: 0.75, child: Text('0.75x')),
+        const PopupMenuItem(value: 1.0, child: Text('1.0x')),
+        const PopupMenuItem(value: 1.25, child: Text('1.25x')),
+        const PopupMenuItem(value: 1.5, child: Text('1.5x')),
+        const PopupMenuItem(value: 2.0, child: Text('2.0x')),
+      ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          '${state.playbackSpeed}x',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
       ),
     );
   }
