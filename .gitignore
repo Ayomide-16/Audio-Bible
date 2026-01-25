@@ -76,3 +76,6 @@ ehthumbs.db
 # Gradle
 .gradle/
 local.properties
+
+# USB transfer folder (audio files for development testing)
+audio_usb_transfer/

@@ -103,14 +103,14 @@ class DownloadService {
   }
   
   /// Get audio file path for a specific book and chapter
-  static Future<String> getAudioPath(String bookName, int chapter) async {
+  static Future<String> getAudioPath(int bookId, int chapter) async {
     final audioDir = await getAudioDirectory();
-    return '${audioDir.path}/$bookName/$chapter.mp3';
+    return '${audioDir.path}/$bookId/$chapter.mp3';
   }
   
   /// Check if specific audio file exists
-  static Future<bool> audioFileExists(String bookName, int chapter) async {
-    final path = await getAudioPath(bookName, chapter);
+  static Future<bool> audioFileExists(int bookId, int chapter) async {
+    final path = await getAudioPath(bookId, chapter);
     return File(path).exists();
   }
   
