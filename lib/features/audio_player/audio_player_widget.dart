@@ -110,7 +110,12 @@ class BottomAudioPlayer extends ConsumerWidget {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       height: state.isExpanded ? 200 : 72,
-      margin: EdgeInsets.only(bottom: state.isExpanded ? 0 : 80),
+      margin: EdgeInsets.fromLTRB(
+        state.isExpanded ? 0 : 12,
+        0,
+        state.isExpanded ? 0 : 12,
+        state.isExpanded ? 0 : 88,
+      ),
       decoration: BoxDecoration(
         color: isDark 
             ? AppColors.cardDark.withOpacity(0.95)
@@ -129,12 +134,6 @@ class BottomAudioPlayer extends ConsumerWidget {
           color: isDark ? AppColors.borderDark : AppColors.borderLight,
           width: 0.5,
         ),
-      ),
-      margin: EdgeInsets.fromLTRB(
-        state.isExpanded ? 0 : 12,
-        0,
-        state.isExpanded ? 0 : 12,
-        state.isExpanded ? 0 : 88,
       ),
       child: ClipRRect(
         borderRadius: state.isExpanded 
