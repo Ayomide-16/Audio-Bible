@@ -257,6 +257,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               } else {
                 ref.read(audioPlayerStateProvider.notifier).play(
                   chapter.title.split(' ').first,
+                  widget.bookId,
                   _currentChapter,
                 );
               }

@@ -7,6 +7,7 @@ import '../../data/models/bible_models.dart';
 import '../../core/theme/app_theme.dart';
 import '../reader/reader_screen.dart';
 import '../search/search_screen.dart';
+import '../settings/settings_screen.dart';
 import '../navigation/honeycomb_navigation.dart';
 import '../navigation/list_navigation.dart';
 import '../navigation/grid_navigation.dart';
