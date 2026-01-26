@@ -7,7 +7,6 @@ import '../../data/models/bible_models.dart';
 import '../../core/theme/app_theme.dart';
 import '../reader/reader_screen.dart';
 import '../search/search_screen.dart';
-import '../settings/settings_screen.dart';
 import '../navigation/honeycomb_navigation.dart';
 import '../navigation/list_navigation.dart';
 import '../navigation/grid_navigation.dart';
@@ -53,39 +52,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final bibleAsync = ref.watch(bibleProvider);
     final lastReadAsync = ref.watch(lastReadProvider);
-    final recentAsync = ref.watch(recentChaptersProvider);
     final navStyle = ref.watch(navigationStyleProvider);
     
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // Header with logo and search
-            SliverToBoxAdapter(
-              child: _buildHeader(context),
+        child: Column(
+          children: [
+            // Header with logo and search (fixed at top)
+            _buildHeader(context),
+            
+            // Continue reading section (if available)
+            lastReadAsync.when(
+              data: (lastRead) => lastRead != null 
+                  ? _buildContinueReading(context, lastRead)
+                  : const SizedBox.shrink(),
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
             ),
             
-            // Continue reading section
-            SliverToBoxAdapter(
-              child: lastReadAsync.when(
-                data: (lastRead) => lastRead != null 
-                    ? _buildContinueReading(context, lastRead)
-                    : const SizedBox.shrink(),
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-            ),
-            
-            // Navigation based on style
-            SliverToBoxAdapter(
+            // Navigation based on style (takes remaining space)
+            Expanded(
               child: bibleAsync.when(
                 data: (bible) => _buildNavigation(context, bible, navStyle),
-                loading: () => const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(40),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -93,22 +82,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ),
-            ),
-            
-            // Recent history section
-            SliverToBoxAdapter(
-              child: recentAsync.when(
-                data: (recent) => recent.isNotEmpty 
-                    ? _buildRecentHistory(context, recent)
-                    : const SizedBox.shrink(),
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-            ),
-            
-            // Bottom padding
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 100),
             ),
           ],
         ),
@@ -130,6 +103,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   'assets/icon.png',
                   width: 48,
                   height: 48,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.book, color: Colors.white),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -153,7 +135,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
           ).animate().fadeIn(duration: 300.ms),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           
           // Search bar
           GestureDetector(
@@ -192,7 +174,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildContinueReading(BuildContext context, Map<String, dynamic> lastRead) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
       child: GestureDetector(
         onTap: () => _openChapter(
           context, 
@@ -287,39 +269,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
         );
     }
-  }
-
-  Widget _buildRecentHistory(BuildContext context, List<Map<String, dynamic>> recent) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Recent',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: recent.map((item) {
-              return ActionChip(
-                label: Text('${item['bookName']} ${item['chapter']}'),
-                onPressed: () => _openChapter(
-                  context,
-                  item['bookId'],
-                  item['chapter'],
-                  item['bookName'],
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
   }
 
   void _openChapter(BuildContext context, int bookId, int chapter, String bookName) async {

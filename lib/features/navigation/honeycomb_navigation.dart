@@ -63,58 +63,63 @@ class _HoneycombNavigationState extends State<HoneycombNavigation> {
     final letters = LetterBooks.letters;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    return Padding(
-      padding: const EdgeInsets.all(20), // Uniform 20px margin on all sides
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Text(
-            'Select a Letter',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap a letter to browse books',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 24),
-          
-          // Honeycomb Grid - Centered with uniform spacing
-          Expanded(
-            child: Center(
-              child: SingleChildScrollView(
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 10, // Horizontal spacing between hexagons
-                  runSpacing: 8, // Vertical spacing between rows
-                  children: letters.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final letter = entry.value;
-                    final bookCount = LetterBooks.letterMap[letter]?.length ?? 0;
-                    final color = AppColors.honeycombColors[index % AppColors.honeycombColors.length];
-                    
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() => _selectedLetter = letter);
-                      },
-                      child: _HexagonTile(
-                        letter: letter,
-                        bookCount: bookCount,
-                        color: color,
-                        isDark: isDark,
-                        delay: index * 40,
-                      ),
-                    );
-                  }).toList(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Select a Letter',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tap a letter to browse books',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        
+        // Honeycomb Grid - Scrollable
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+            child: Center(
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 6,
+                children: letters.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final letter = entry.value;
+                  final bookCount = LetterBooks.letterMap[letter]?.length ?? 0;
+                  final color = AppColors.honeycombColors[index % AppColors.honeycombColors.length];
+                  
+                  return _HexagonTile(
+                    letter: letter,
+                    bookCount: bookCount,
+                    color: color,
+                    isDark: isDark,
+                    delay: index * 40,
+                    onTap: () {
+                      debugPrint('Honeycomb tapped: $letter');
+                      setState(() => _selectedLetter = letter);
+                    },
+                  );
+                }).toList(),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -128,13 +133,13 @@ class _HoneycombNavigationState extends State<HoneycombNavigation> {
     final letterIndex = LetterBooks.letters.indexOf(_selectedLetter!);
     final color = AppColors.honeycombColors[letterIndex % AppColors.honeycombColors.length];
 
-    return Padding(
-      padding: const EdgeInsets.all(20), // Uniform margin
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Back button and header
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Back button and header
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
             children: [
               _buildBackButton(onPressed: () => setState(() => _selectedLetter = null)),
               const SizedBox(width: 12),
@@ -167,7 +172,9 @@ class _HoneycombNavigationState extends State<HoneycombNavigation> {
                   children: [
                     Text(
                       'Books starting with "$_selectedLetter"',
-                      style: Theme.of(context).textTheme.headlineMedium,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     Text(
                       '${books.length} books',
@@ -178,74 +185,74 @@ class _HoneycombNavigationState extends State<HoneycombNavigation> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          
-          // Books list
-          Expanded(
-            child: ListView.builder(
-              itemCount: books.length,
-              itemBuilder: (context, index) {
-                final book = books[index];
-                
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.cardDark : AppColors.cardLight,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isDark ? AppColors.borderDark : AppColors.borderLight,
-                      width: 0.5,
+        ),
+        
+        // Books list
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+            itemCount: books.length,
+            itemBuilder: (context, index) {
+              final book = books[index];
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.cardDark : AppColors.cardLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark ? AppColors.borderDark : AppColors.borderLight,
+                    width: 0.5,
+                  ),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          color.withOpacity(0.2),
+                          color.withOpacity(0.1),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Center(
+                      child: Text(
+                        book.name.substring(0, 1),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: color,
+                        ),
+                      ),
                     ),
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            color.withOpacity(0.2),
-                            color.withOpacity(0.1),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Center(
-                        child: Text(
-                          book.name.substring(0, 1),
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: color,
-                          ),
-                        ),
-                      ),
+                  title: Text(
+                    book.name,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                    title: Text(
-                      book.name,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    subtitle: Text(
-                      '${book.chapterCount} chapters',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    trailing: Icon(
-                      Icons.chevron_right_rounded,
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                    ),
-                    onTap: () => setState(() => _selectedBook = book),
                   ),
-                ).animate(delay: (index * 50).ms).fadeIn().slideX(begin: 0.1);
-              },
-            ),
+                  subtitle: Text(
+                    '${book.chapterCount} chapters',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  trailing: Icon(
+                    Icons.chevron_right_rounded,
+                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                  ),
+                  onTap: () => setState(() => _selectedBook = book),
+                ),
+              ).animate(delay: (index * 50).ms).fadeIn().slideX(begin: 0.1);
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -256,13 +263,13 @@ class _HoneycombNavigationState extends State<HoneycombNavigation> {
         : 0;
     final color = AppColors.honeycombColors[letterIndex % AppColors.honeycombColors.length];
 
-    return Padding(
-      padding: const EdgeInsets.all(20), // Uniform margin
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Back button and header
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Back button and header
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
             children: [
               _buildBackButton(onPressed: () => setState(() => _selectedBook = null)),
               const SizedBox(width: 12),
@@ -283,62 +290,62 @@ class _HoneycombNavigationState extends State<HoneycombNavigation> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          
-          // Chapter grid
-          Expanded(
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 5,
-                childAspectRatio: 1,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-              ),
-              itemCount: _selectedBook!.chapterCount,
-              itemBuilder: (context, index) {
-                final chapter = index + 1;
-                
-                return GestureDetector(
-                  onTap: () {
-                    widget.onChapterSelected(
-                      _selectedBook!.id,
-                      chapter,
-                      _selectedBook!.name,
-                    );
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          color.withOpacity(isDark ? 0.3 : 0.15),
-                          color.withOpacity(isDark ? 0.2 : 0.08),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: color.withOpacity(0.3),
-                        width: 1,
-                      ),
+        ),
+        
+        // Chapter grid
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 5,
+              childAspectRatio: 1,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+            ),
+            itemCount: _selectedBook!.chapterCount,
+            itemBuilder: (context, index) {
+              final chapter = index + 1;
+              
+              return GestureDetector(
+                onTap: () {
+                  widget.onChapterSelected(
+                    _selectedBook!.id,
+                    chapter,
+                    _selectedBook!.name,
+                  );
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        color.withOpacity(isDark ? 0.3 : 0.15),
+                        color.withOpacity(isDark ? 0.2 : 0.08),
+                      ],
                     ),
-                    child: Center(
-                      child: Text(
-                        '$chapter',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? color.withOpacity(0.9) : color,
-                        ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: color.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$chapter',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? color.withOpacity(0.9) : color,
                       ),
                     ),
                   ),
-                ).animate(delay: (index * 15).ms).fadeIn().scale(begin: const Offset(0.8, 0.8));
-              },
-            ),
+                ),
+              ).animate(delay: (index * 15).ms).fadeIn().scale(begin: const Offset(0.8, 0.8));
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -369,12 +376,14 @@ class _HoneycombNavigationState extends State<HoneycombNavigation> {
 }
 
 /// Beautiful hexagon tile with gradient and shadow
+/// FIXED: onTap callback passed directly, no nested GestureDetector consuming events
 class _HexagonTile extends StatefulWidget {
   final String letter;
   final int bookCount;
   final Color color;
   final bool isDark;
   final int delay;
+  final VoidCallback onTap;
 
   const _HexagonTile({
     required this.letter,
@@ -382,6 +391,7 @@ class _HexagonTile extends StatefulWidget {
     required this.color,
     required this.isDark,
     required this.delay,
+    required this.onTap,
   });
 
   @override
@@ -394,15 +404,19 @@ class _HexagonTileState extends State<_HexagonTile> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque, // Important: ensures tap detection works
       onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap(); // Trigger the callback on tap up
+      },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedScale(
-        scale: _isPressed ? 0.95 : 1.0,
+        scale: _isPressed ? 0.92 : 1.0,
         duration: const Duration(milliseconds: 100),
         child: SizedBox(
-          width: 68,
-          height: 78,
+          width: 72,
+          height: 82,
           child: CustomPaint(
             painter: _HexagonPainter(
               color: widget.color,
@@ -415,7 +429,7 @@ class _HexagonTileState extends State<_HexagonTile> {
                   Text(
                     widget.letter,
                     style: const TextStyle(
-                      fontSize: 26,
+                      fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       shadows: [
@@ -502,8 +516,8 @@ class _HexagonPainter extends CustomPainter {
     final path = Path();
     final centerX = size.width / 2;
     final centerY = size.height / 2;
-    final radiusX = size.width / 2 * 0.92;
-    final radiusY = size.height / 2 * 0.92;
+    final radiusX = size.width / 2 * 0.95;
+    final radiusY = size.height / 2 * 0.95;
 
     for (int i = 0; i < 6; i++) {
       final angle = (math.pi / 3) * i - math.pi / 2;
