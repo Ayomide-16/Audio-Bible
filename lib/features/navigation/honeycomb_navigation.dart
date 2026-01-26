@@ -88,33 +88,18 @@ class _HoneycombNavigationState extends State<HoneycombNavigation> {
         ),
         const SizedBox(height: 24),
         
-        // Honeycomb Grid - Scrollable
+        // Interlocking Honeycomb Grid
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
             child: Center(
-              child: Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 8,
-                runSpacing: 6,
-                children: letters.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final letter = entry.value;
-                  final bookCount = LetterBooks.letterMap[letter]?.length ?? 0;
-                  final color = AppColors.honeycombColors[index % AppColors.honeycombColors.length];
-                  
-                  return _HexagonTile(
-                    letter: letter,
-                    bookCount: bookCount,
-                    color: color,
-                    isDark: isDark,
-                    delay: index * 40,
-                    onTap: () {
-                      debugPrint('Honeycomb tapped: $letter');
-                      setState(() => _selectedLetter = letter);
-                    },
-                  );
-                }).toList(),
+              child: _InterlockingHoneycombGrid(
+                letters: letters,
+                isDark: isDark,
+                onLetterTap: (letter) {
+                  debugPrint('Honeycomb tapped: $letter');
+                  setState(() => _selectedLetter = letter);
+                },
               ),
             ),
           ),
@@ -375,8 +360,73 @@ class _HoneycombNavigationState extends State<HoneycombNavigation> {
   }
 }
 
-/// Beautiful hexagon tile with gradient and shadow
-/// FIXED: onTap callback passed directly, no nested GestureDetector consuming events
+/// Interlocking honeycomb grid - true honeycomb pattern with offset rows
+class _InterlockingHoneycombGrid extends StatelessWidget {
+  final List<String> letters;
+  final bool isDark;
+  final Function(String) onLetterTap;
+  
+  // Honeycomb dimensions
+  static const double hexWidth = 64.0;
+  static const double hexHeight = 74.0;
+  static const double horizontalSpacing = 2.0; // Gap between hexagons horizontally
+  static const double verticalSpacing = 2.0; // Gap between rows
+  
+  const _InterlockingHoneycombGrid({
+    required this.letters,
+    required this.isDark,
+    required this.onLetterTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Calculate hex positions for interlocking pattern
+    // Using 4 columns for a nice compact layout
+    const int columns = 4;
+    final int rows = (letters.length / columns).ceil() + 1;
+    
+    // Calculate total grid size
+    final double gridWidth = columns * (hexWidth + horizontalSpacing) + hexWidth / 2;
+    final double rowHeight = hexHeight * 0.75 + verticalSpacing; // 75% overlap for interlocking
+    final double gridHeight = rows * rowHeight + hexHeight * 0.25;
+    
+    return SizedBox(
+      width: gridWidth,
+      height: gridHeight,
+      child: Stack(
+        children: List.generate(letters.length, (index) {
+          final int row = index ~/ columns;
+          final int col = index % columns;
+          final bool isOffsetRow = row.isOdd;
+          
+          // Calculate position with interlocking offset
+          final double x = col * (hexWidth + horizontalSpacing) + 
+                          (isOffsetRow ? (hexWidth + horizontalSpacing) / 2 : 0);
+          final double y = row * rowHeight;
+          
+          final letter = letters[index];
+          final bookCount = LetterBooks.letterMap[letter]?.length ?? 0;
+          final color = AppColors.honeycombColors[index % AppColors.honeycombColors.length];
+          
+          return Positioned(
+            left: x,
+            top: y,
+            child: _HexagonTile(
+              letter: letter,
+              bookCount: bookCount,
+              color: color,
+              isDark: isDark,
+              delay: index * 40,
+              onTap: () => onLetterTap(letter),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+/// Beautiful hexagon tile with gradient, shadow, and tap feedback
 class _HexagonTile extends StatefulWidget {
   final String letter;
   final int bookCount;
@@ -404,19 +454,19 @@ class _HexagonTileState extends State<_HexagonTile> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      behavior: HitTestBehavior.opaque, // Important: ensures tap detection works
+      behavior: HitTestBehavior.opaque,
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
         setState(() => _isPressed = false);
-        widget.onTap(); // Trigger the callback on tap up
+        widget.onTap();
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedScale(
         scale: _isPressed ? 0.92 : 1.0,
         duration: const Duration(milliseconds: 100),
         child: SizedBox(
-          width: 72,
-          height: 82,
+          width: _InterlockingHoneycombGrid.hexWidth,
+          height: _InterlockingHoneycombGrid.hexHeight,
           child: CustomPaint(
             painter: _HexagonPainter(
               color: widget.color,
@@ -429,7 +479,7 @@ class _HexagonTileState extends State<_HexagonTile> {
                   Text(
                     widget.letter,
                     style: const TextStyle(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       shadows: [
@@ -478,7 +528,7 @@ class _HexagonPainter extends CustomPainter {
     final path = _createHexagonPath(size);
     
     // Shadow
-    canvas.drawShadow(path, Colors.black.withOpacity(0.3), 4, true);
+    canvas.drawShadow(path, Colors.black.withOpacity(0.4), 6, true);
     
     // Gradient fill
     final paint = Paint()
@@ -487,7 +537,7 @@ class _HexagonPainter extends CustomPainter {
         end: Alignment.bottomRight,
         colors: [
           color,
-          Color.lerp(color, Colors.black, 0.2)!,
+          Color.lerp(color, Colors.black, 0.25)!,
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawPath(path, paint);
@@ -498,7 +548,7 @@ class _HexagonPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.center,
         colors: [
-          Colors.white.withOpacity(0.3),
+          Colors.white.withOpacity(0.35),
           Colors.white.withOpacity(0.0),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height / 2));
@@ -506,9 +556,9 @@ class _HexagonPainter extends CustomPainter {
     
     // Border
     final borderPaint = Paint()
-      ..color = Colors.white.withOpacity(0.2)
+      ..color = Colors.white.withOpacity(0.15)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
+      ..strokeWidth = 1.0;
     canvas.drawPath(path, borderPaint);
   }
 
@@ -516,10 +566,11 @@ class _HexagonPainter extends CustomPainter {
     final path = Path();
     final centerX = size.width / 2;
     final centerY = size.height / 2;
-    final radiusX = size.width / 2 * 0.95;
-    final radiusY = size.height / 2 * 0.95;
+    final radiusX = size.width / 2 * 0.96;
+    final radiusY = size.height / 2 * 0.96;
 
     for (int i = 0; i < 6; i++) {
+      // Pointy-top hexagon (rotated 30 degrees from flat-top)
       final angle = (math.pi / 3) * i - math.pi / 2;
       final x = centerX + radiusX * math.cos(angle);
       final y = centerY + radiusY * math.sin(angle);
